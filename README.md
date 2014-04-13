@@ -3,7 +3,7 @@ Notify allows you to register the Django build-in signals with the custom e-mail
 
 Post-save
 ------
-To register `post-save` message, create the `notify.PostSaveMessageType`
+To register `post-save` message, create the `notify.registry.PostSaveMessageType`
 class, provide the `RECEIVERS` list (i.e. a list of names of the groups, that
 can be configured to receive an e-mail during the `post-save` processing) and 
 the `MODELS` list (only these models will be handled by this message template).
