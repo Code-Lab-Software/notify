@@ -1,6 +1,4 @@
-Notify allows you to register the Django build-in signals with the custom e-mail message template.
-
-Once the template is registered, it will be sent to a receivers groups.
+Notify allows you to register the Django build-in signals with the custom e-mail message template. Once the template is registered, it will be sent to a receivers groups.
 
 
 Post-save
@@ -26,7 +24,7 @@ class SomeMessageHandler(PostSaveMessageType):
 
         def get_receiver_b_emails(self, instance):
 	    # Some logic here...	
-            return ['another_email@other.domain.com', 'a_second_email@other.com']
+	    return ['another_email@other.domain.com', 'a_second_email@other.com']
 ``` 
 
 Other signals
