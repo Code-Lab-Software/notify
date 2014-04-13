@@ -1,3 +1,7 @@
+""" 
+Message template models factory - based on the Marty Alchin recipe for django-simple-history
+"""
+
 from django.db import models
 from django.conf import settings
 
@@ -5,6 +9,11 @@ def get_model_name(registered_cls):
     return registered_cls.__name__
 
 class MessageModelsFactory(object):
+    """ This is a factory class - it will dynamically create
+        message-type models using the information stored in 
+        the registry classes list in `registry.classes`.
+
+    """
 
     def register_message_models(self):
         import registry
@@ -30,13 +39,19 @@ class MessageModelsFactory(object):
 
     def get_message_fields(self, registered_cls):
         """
-        Returns a dictionary of fields that will be added to the historical
-        record model, in addition to the ones returned by copy_fields below.
+        Returns a dictionary of fields that will be added to the message template model.
+        Every message template class will have:
+         - message subject,
+         - message body,
+         - receiver type,
+         - is_archived flag .
+        
         """
         BASE_RECEIVERS = (('sys_manager', 'System manager'), ('sys_admin', 'System admin'), ('custom_receiver', 'Custom receivers'))
         return {'subject':  models.CharField(max_length=255, verbose_name="Notification subject template"),
                 'body':  models.TextField(verbose_name="Notification body template"),
-                'receiver': models.CharField(max_length=31, choices=BASE_RECEIVERS + registered_cls.RECEIVERS)
+                'receiver': models.CharField(max_length=31, choices=BASE_RECEIVERS + registered_cls.RECEIVERS),
+                'is_archived': models.BooleanField(verbose_name="Archive sent emails?", default=False)
                 }
 
 

@@ -13,6 +13,10 @@ from django import template
 def render_string(content, context):
     return template.Template(content).render(template.Context(context))
 
+# -----------------------------------------
+# Base message-sending logic
+# -----------------------------------------
+
 class MessageMixin(object):
 
     def get_sys_manager_emails(self, instance):
@@ -37,7 +41,7 @@ class MessageMixin(object):
             if email: # sometimes email is empty
                 self.notify(context, self.subject, self.body, email, bcc_emails, self, instance, self.receiver)
 
-    def notify(self, context, subject_tpl, body_tpl, receiver_email, bcc_emails, event, instance, recipient):
+    def notify(self, context, subject_tpl, body_tpl, receiver_email, bcc_emails, message_type, instance, recipient):
         subject = render_string(subject_tpl, context)
         body = render_string(body_tpl, context)
         email = EmailMessage(subject, body, settings.DEFAULT_FROM_EMAIL,
@@ -45,8 +49,8 @@ class MessageMixin(object):
                              headers = {'Reply-To': settings.DEFAULT_FROM_EMAIL})
         logged_message = None
 
-        #if self.log:
-        #    logged_message = get_model('notify','MessageLog').objects.create_from_email(email, event, instance, recipient)
+        if self.is_archived:
+            logged_message = get_model('notify','MessageLog').objects.create_from_email(email, message_type, instance, recipient, trigger_info=self.get_trigger_info(instance))
 
         if getattr(settings, 'NOTIFICATIONS_ENABLED', False):
             try:
@@ -59,8 +63,14 @@ class MessageMixin(object):
                     logged_message.note = u"%s" % error
                     logged_message.save()
 
+# -----------------------------------------
+# Post-save signal handler
+# -----------------------------------------
 class PostSaveMessage(models.Model, MessageMixin):
     is_created_state = models.CharField(max_length=1, choices=(('a', 'Any'), ('b', 'On creation only'), ('c', 'On update only')))
+
+    def get_trigger_info(self, instance):
+        return "%s.%s.%s" % (instance._meta.app_label, instance._meta.object_name, instance.pk)
 
     @classmethod
     def register_model(cls, registered_cls, mdl):

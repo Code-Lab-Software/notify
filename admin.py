@@ -7,7 +7,12 @@ class MessageAdmin(admin.ModelAdmin):
     list_display = ('subject', 'body', 'log', 'receiver')
     list_filter = ( 'receiver', )
 
+class MessageLogAdmin(admin.ModelAdmin):
+    list_display = ('subject', 'message_type', 'recipient', 'to_emails', 'creation_datetime', 'sent_sucessfully', 'trigger_info')
+    search_fields = ('subject',)
+
 admin.site.register(CustomReceiver)
+admin.site.register(MessageLog, MessageLogAdmin)
 
 import registry
 for reg_cls in registry.classes:
