@@ -19,14 +19,11 @@ class MessageModelsFactory(object):
         import registry
         for reg_cls in registry.classes:
             for registered_cls in reg_cls._registry:
-                print('Creating message type model: %s...' % registered_cls)
                 try:
                     mdl = self.create_related_model(reg_cls, registered_cls)
                     reg_cls.register_model(registered_cls, mdl)
                 except Exception, error:
-                    print('\t Failed... Error: %s' % error)
-                else:
-                    print('\t Model %s created!' % mdl)
+                    print('\t Dynamic model creation for %sfailed... Error: %s' % (registered_cls, error))
 
     def create_related_model(self, reg_cls, registered_cls):
         """
