@@ -19,8 +19,8 @@ class SomeMessageHandler(PostSaveMessageType):
 				
     class Receivers:
          def get_receiver_a_emails(self, instance):
-	    # Some logic here...	
-	    return ['some_email@example.org']
+	     # Some logic here...	
+	     return ['some_email@example.org']
 
         def get_receiver_b_emails(self, instance):
 	    # Some logic here...	
