@@ -29,7 +29,10 @@ class MessageMixin(object):
         return  self.custom_receivers.values_list('email', flat=True)
 
     def get_bcc_emails(self):
-        return [settings.DEFAULT_FROM_EMAIL]
+        # do przemyslenia opcjonalna obsluga 
+        # wysylania BCC na mejla servera wysylajcaego
+        #return [settings.DEFAULT_FROM_EMAIL]
+        return []
 
     def get_message_context(self, instance):
         return {'instance': instance}
