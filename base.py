@@ -87,5 +87,6 @@ def notify_on_post_save(sender, instance, created, raw, using, **kwargs):
     import registry
     is_created_state = ['a', 'b'] if created else ['a', 'c']
     for message_type in registry.PostSaveMessageType._models:
-        for message in message_type.objects.filter(is_created_state__in=is_created_state):
-            message.send(instance)
+        if sender in registry.PostSaveMessageType._models[message_type]:
+            for message in message_type.objects.filter(is_created_state__in=is_created_state):
+                message.send(instance)

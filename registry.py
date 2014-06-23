@@ -21,11 +21,11 @@ class PostSaveMessageType(object):
     base_model = base.PostSaveMessage
     __metaclass__ = MessageTypeTracker
     _registry = []
-    _models = []
+    _models = {}
 
     @classmethod
     def register_model(cls, registered_cls, mdl):
-        cls._models.append(mdl)
+        cls._models[mdl] = registered_cls.MODELS
         cls.base_model.register_model(registered_cls, mdl)
 
 # -------------------------------------------------------
