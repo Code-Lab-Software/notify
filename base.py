@@ -19,6 +19,16 @@ def render_string(content, context):
 
 class MessageMixin(object):
 
+    def get_subject_tpl(self, instance):
+        if hasattr(self, 'get_%s_subject_tpl' % self.receiver):
+            return getattr(self, 'get_%s_subject_tpl' % self.receiver)(instance) or self.subject
+        return self.subject
+
+    def get_body_tpl(self, instance):
+        if hasattr(self, 'get_%s_body_tpl' % self.receiver):
+            return getattr(self, 'get_%s_body_tpl' % self.receiver)(instance) or self.body
+        return self.body
+
     def get_sys_manager_emails(self, instance):
         return map(lambda x: x[1], settings.MANAGERS) 
 
@@ -42,7 +52,7 @@ class MessageMixin(object):
         context = self.get_message_context(instance)
         for email in getattr(self, 'get_%s_emails' % self.receiver)(instance):
             if email: # sometimes email is empty
-                self.notify(context, self.subject, self.body, email, bcc_emails, self, instance, self.receiver)
+                self.notify(context, self.get_subject_tpl(instance), self.get_body_tpl(instance), email, bcc_emails, self, instance, self.receiver)
 
     def notify(self, context, subject_tpl, body_tpl, receiver_email, bcc_emails, message_type, instance, recipient):
         subject = render_string(subject_tpl, context)
