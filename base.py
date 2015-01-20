@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import datetime
 
 from django.core.mail import EmailMessage
@@ -109,15 +110,22 @@ class PostSaveMessageEventManager(models.Manager):
 
     def process_events(self):
         pending_events = self.filter(process_lock_datetime__isnull=True)
+        #print('Pozostało %d obiektów do przetworzenia.' % pending_events.count())
         # Blokuję przetwarzanie
         pending_events.update(process_lock_datetime=datetime.datetime.now())
         for event in pending_events:
-            instance = event.get_instance()
-            if not instance is None:
-
+            self.process_event(event)
 
     def process_event(self, event):
+        if event.process_finished_datetime:
+            return
         import registry
+        # Jeżeli event nie jest jeszcze oznaczony jako przetwarzany
+        # to go oznaczamy
+        if event.process_lock_datetime is None:
+            event.process_lock_datetime = datetime.datetime.now()
+            event.save()
+        # Przetwarzamy event
         created = event.event_mode == 'c'
         instance = event.get_instance()
         if not instance is None:
@@ -126,14 +134,14 @@ class PostSaveMessageEventManager(models.Manager):
                 if instance.__class__ in registry.PostSaveMessageType._models[message_type]:
                     for message in message_type.objects.filter(is_created_state__in=is_created_state):
                         message.send(instance)
+        # Oznaczamy event jako przetworzony
         event.process_finished_datetime = datetime.datetime.now()
         event.save()
-        
 
 class PostSaveMessageEvent(models.Model):
     instance_id = models.PositiveSmallIntegerField()
-    app_label = models.CharField()
-    model_name = models.CharField()
+    app_label = models.CharField(max_length=127)
+    model_name = models.CharField(max_length=127)
     event_mode = models.CharField(max_length=1, choices=(('c', 'Created'), ('u', 'Updated'), ('d', 'Deleted')))
     publication_datetime = models.DateTimeField(auto_now_add=True)
     process_lock_datetime = models.DateTimeField(null=True)
@@ -148,8 +156,13 @@ class PostSaveMessageEvent(models.Model):
             return None
 
 def notify_on_post_save(sender, instance, created, raw, using, **kwargs):
-    models.get_model('notify', 'PostSaveMessageEvent').objects.create_from_instance(instance, created)
+    if getattr(settings, 'NOTIFICATIONS_ENABLED', False):
+        models.get_model('notify', 'PostSaveMessageEvent').objects.create_from_instance(instance, created)
 
+# ----------------------------------------------------
+# Stary mechanizm - wysłanie w czasie rzeczywistym
+# do wyrzucenia wkrótce
+# ----------------------------------------------------
 def _notify_on_post_save(sender, instance, created, raw, using, **kwargs):
     import registry
     is_created_state = ['a', 'b'] if created else ['a', 'c']
