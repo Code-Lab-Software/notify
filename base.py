@@ -51,9 +51,19 @@ class MessageMixin(object):
     def send(self, instance):
         bcc_emails = self.get_bcc_emails()
         context = self.get_message_context(instance)
-        for email in getattr(self, 'get_%s_emails' % self.receiver)(instance):
-            if email: # sometimes email is empty
-                self.notify(context, self.get_subject_tpl(instance), self.get_body_tpl(instance), email, bcc_emails, self, instance, self.receiver)
+
+        emails_data = getattr(self, 'get_%s_emails' % self.receiver)(instance)
+        if isinstance(emails_data, list):
+            for email in emails_data:
+                if email: # sometimes email is empty
+                    self.notify(context, self.get_subject_tpl(instance), self.get_body_tpl(instance), email, bcc_emails, self, instance, self.receiver)
+        if isinstance(emails_data, dict):
+            for lang, emails in emails_data.keys(), emails_data.values():
+                for email in emails:
+                    if email: # sometimes email is empty
+                        subject_handler = getattr(self, 'get_subject_%s_tpl' % lang, None) or self.get_subject_tpl
+                        body_handler = getattr(self, 'get_body_%s_tpl' % lang, None) or self.get_body_tpl
+                        self.notify(context, subject_handler(instance), body_handler(instance), email, bcc_emails, self, instance, self.receiver)
 
     def notify(self, context, subject_tpl, body_tpl, receiver_email, bcc_emails, message_type, instance, recipient):
         subject = render_string(subject_tpl, context)
