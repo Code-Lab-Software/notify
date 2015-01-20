@@ -53,6 +53,7 @@ class MessageMixin(object):
         context = self.get_message_context(instance)
 
         emails_data = getattr(self, 'get_%s_emails' % self.receiver)(instance)
+
         if isinstance(emails_data, list):
             for email in emails_data:
                 if email: # sometimes email is empty
@@ -120,10 +121,11 @@ class PostSaveMessageEventManager(models.Manager):
 
     def process_events(self):
         pending_events = self.filter(process_lock_datetime__isnull=True)
+        pending_events_ids = list(pending_events.values_list('id', flat=True))
         #print('Pozostało %d obiektów do przetworzenia.' % pending_events.count())
         # Blokuję przetwarzanie
         pending_events.update(process_lock_datetime=datetime.datetime.now())
-        for event in pending_events:
+        for event in self.filter(id__in=pending_events_ids):
             self.process_event(event)
 
     def process_event(self, event):
