@@ -93,7 +93,64 @@ class PostSaveMessage(models.Model, MessageMixin):
     class Meta:
         abstract = True
 
+
+class PostSaveMessageEventManager(models.Manager):
+
+    def create_from_instance(self, instance, created):
+        import registry
+        for message_type in registry.PostSaveMessageType._models:
+            if instance.__class__ in registry.PostSaveMessageType._models[message_type]:
+                self.create(instance_id=instance.id,
+                            app_label=instance._meta.app_label,
+                            model_name=instance._meta.object_name.lower(),
+                            event_mode='c' if created else 'u')
+                # jeżeli znalazłem już jakiś zgodny wpis, nie szukam dalej
+                break
+
+    def process_events(self):
+        pending_events = self.filter(process_lock_datetime__isnull=True)
+        # Blokuję przetwarzanie
+        pending_events.update(process_lock_datetime=datetime.datetime.now())
+        for event in pending_events:
+            instance = event.get_instance()
+            if not instance is None:
+
+
+    def process_event(self, event):
+        import registry
+        created = event.event_mode == 'c'
+        instance = event.get_instance()
+        if not instance is None:
+            is_created_state = ['a', 'b'] if created else ['a', 'c']
+            for message_type in registry.PostSaveMessageType._models:
+                if instance.__class__ in registry.PostSaveMessageType._models[message_type]:
+                    for message in message_type.objects.filter(is_created_state__in=is_created_state):
+                        message.send(instance)
+        event.process_finished_datetime = datetime.datetime.now()
+        event.save()
+        
+
+class PostSaveMessageEvent(models.Model):
+    instance_id = models.PositiveSmallIntegerField()
+    app_label = models.CharField()
+    model_name = models.CharField()
+    event_mode = models.CharField(max_length=1, choices=(('c', 'Created'), ('u', 'Updated'), ('d', 'Deleted')))
+    publication_datetime = models.DateTimeField(auto_now_add=True)
+    process_lock_datetime = models.DateTimeField(null=True)
+    process_finished_datetime = models.DateTimeField(null=True)
+
+    objects = PostSaveMessageEventManager()
+
+    def get_instance(self):
+        try:
+            return models.get_model(self.app_label, self.model_name).objects.get(id=self.instance_id)
+        except:
+            return None
+
 def notify_on_post_save(sender, instance, created, raw, using, **kwargs):
+    models.get_model('notify', 'PostSaveMessageEvent').objects.create_from_instance(instance, created)
+
+def _notify_on_post_save(sender, instance, created, raw, using, **kwargs):
     import registry
     is_created_state = ['a', 'b'] if created else ['a', 'c']
     for message_type in registry.PostSaveMessageType._models:
