@@ -10,9 +10,16 @@ from django.db.models import get_model
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+from django.utils import translation
 from django import template
-def render_string(content, context):
-    return template.Template(content).render(template.Context(context))
+
+def render_string(content, context, lang=None):
+    default_lang = translation.get_language()
+    trans_lang = lang or default_lang
+    translation.activate(trans_lang)
+    output = template.Template(content).render(template.Context(context))
+    translation.activate(default_lang)
+    return output
 
 # -----------------------------------------
 # Base message-sending logic
@@ -20,14 +27,14 @@ def render_string(content, context):
 
 class MessageMixin(object):
 
-    def get_subject_tpl(self, instance):
+    def get_subject_tpl(self, instance, lang=None):
         if hasattr(self, 'get_%s_subject_tpl' % self.receiver):
-            return getattr(self, 'get_%s_subject_tpl' % self.receiver)(instance) or self.subject
+            return getattr(self, 'get_%s_subject_tpl' % self.receiver)(instance, lang) or self.subject
         return self.subject
 
-    def get_body_tpl(self, instance):
+    def get_body_tpl(self, instance, lang=None):
         if hasattr(self, 'get_%s_body_tpl' % self.receiver):
-            return getattr(self, 'get_%s_body_tpl' % self.receiver)(instance) or self.body
+            return getattr(self, 'get_%s_body_tpl' % self.receiver)(instance, lang) or self.body
         return self.body
 
     def get_sys_manager_emails(self, instance):
@@ -62,13 +69,11 @@ class MessageMixin(object):
             for lang, emails in emails_data.keys(), emails_data.values():
                 for email in emails:
                     if email: # sometimes email is empty
-                        subject_handler = getattr(self, 'get_subject_%s_tpl' % lang, None) or self.get_subject_tpl
-                        body_handler = getattr(self, 'get_body_%s_tpl' % lang, None) or self.get_body_tpl
-                        self.notify(context, subject_handler(instance), body_handler(instance), email, bcc_emails, self, instance, self.receiver)
+                        self.notify(context, self.get_subject_tpl(instance, lang), self.get_body_tpl(instance, lang), email, bcc_emails, self, instance, self.receiver, lang)
 
-    def notify(self, context, subject_tpl, body_tpl, receiver_email, bcc_emails, message_type, instance, recipient):
-        subject = render_string(subject_tpl, context)
-        body = render_string(body_tpl, context)
+    def notify(self, context, subject_tpl, body_tpl, receiver_email, bcc_emails, message_type, instance, recipient, lang=None):
+        subject = render_string(subject_tpl, context, lang)
+        body = render_string(body_tpl, context, lang)
         email = EmailMessage(subject, body, settings.DEFAULT_FROM_EMAIL,
                              [receiver_email], bcc_emails,
                              headers = {'Reply-To': settings.DEFAULT_FROM_EMAIL})
