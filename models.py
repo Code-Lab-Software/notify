@@ -45,7 +45,7 @@ class MessageLog(models.Model):
     to_emails = models.CharField(max_length=512, verbose_name="To emails")
     bcc_emails = models.CharField(max_length=512, verbose_name="BCC emails")
     creation_datetime = models.DateTimeField(auto_now_add=True, verbose_name="Sending datetime")
-    sent_sucessfully = models.BooleanField(verbose_name="Sent succesfully?")    
+    sent_sucessfully = models.BooleanField(verbose_name="Sent succesfully?", default=False)    
     
     # It might be a tempting idea to store the `message_type` as a ContentType... 
     # But in case of content_type removal, CharField will keep the information about the 
