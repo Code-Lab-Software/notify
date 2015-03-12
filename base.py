@@ -93,6 +93,14 @@ class MessageMixin(object):
                     logged_message.note = u"%s" % error
                     logged_message.save()
 
+    def render_body(self, instance, lang):
+        context = self.get_message_context(instance)
+        return render_string(self.get_body_tpl(instance, lang), context, lang)
+
+    def render_subject(self, instance, lang):
+        context = self.get_message_context(instance)
+        return render_string(self.get_subject_tpl(instance, lang), context, lang)
+
 # -----------------------------------------
 # Post-save signal handler
 # -----------------------------------------
