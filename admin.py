@@ -14,7 +14,7 @@ class MessageLogAdmin(admin.ModelAdmin):
 
 
 class PostSaveMessageEventAdmin(admin.ModelAdmin):
-    list_display = ('publication_datetime', 'instance_id', 'app_label', 'model_name')
+    list_display = ('publication_datetime', 'instance_id', 'app_label', 'model_name', 'process_lock_datetime', 'process_finished_datetime')
 
 admin.site.register(CustomReceiver)
 admin.site.register(MessageLog, MessageLogAdmin)

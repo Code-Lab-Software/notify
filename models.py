@@ -56,6 +56,7 @@ class MessageLog(models.Model):
     recipient = models.CharField(max_length=512, verbose_name="Recipient")
 
     trigger_info = models.CharField(max_length=255)
+    error_note = models.TextField(verbose_name="Error note", default='')
 
     objects = MessageLogManager()
 

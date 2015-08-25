@@ -80,7 +80,7 @@ class MessageMixin(object):
         logged_message = None
 
         if self.is_archived:
-            logged_message = get_model('notify','MessageLog').objects.create_from_email(email, message_type, instance, recipient, trigger_info=self.get_trigger_info(instance))
+            logged_message = get_model('notify', 'MessageLog').objects.create_from_email(email, message_type, instance, recipient, trigger_info=self.get_trigger_info(instance))
 
         if getattr(settings, 'NOTIFICATIONS_ENABLED', False):
             try:
@@ -90,7 +90,8 @@ class MessageMixin(object):
                     logged_message.save()
             except Exception, error:
                 if logged_message:
-                    logged_message.note = u"%s" % error
+                    print 'Error:', error
+                    logged_message.error_note = u"%s" % error
                     logged_message.save()
 
     def render_body(self, instance, lang):
@@ -126,6 +127,7 @@ class PostSaveMessageEventManager(models.Manager):
         for message_type in registry.PostSaveMessageType._models:
             if instance.__class__ in registry.PostSaveMessageType._models[message_type]:
                 self.create(instance_id=instance.id,
+                            site_id=getattr(settings, 'SITE_ID'),
                             app_label=instance._meta.app_label,
                             model_name=instance._meta.object_name.lower(),
                             event_mode='c' if created else 'u')
@@ -133,9 +135,9 @@ class PostSaveMessageEventManager(models.Manager):
                 break
 
     def process_events(self):
-        pending_events = self.filter(process_lock_datetime__isnull=True)
+        pending_events = self.filter(process_lock_datetime__isnull=True, site_id=getattr(settings, 'SITE_ID'))
         pending_events_ids = list(pending_events.values_list('id', flat=True))
-        #print('Pozostało %d obiektów do przetworzenia.' % pending_events.count())
+        print('Pozostało %d obiektów do przetworzenia.' % pending_events.count())
         # Blokuję przetwarzanie
         pending_events.update(process_lock_datetime=datetime.datetime.now())
         for event in self.filter(id__in=pending_events_ids):
@@ -165,6 +167,7 @@ class PostSaveMessageEventManager(models.Manager):
 
 class PostSaveMessageEvent(models.Model):
     instance_id = models.PositiveSmallIntegerField()
+    site_id = models.PositiveSmallIntegerField()
     app_label = models.CharField(max_length=127)
     model_name = models.CharField(max_length=127)
     event_mode = models.CharField(max_length=1, choices=(('c', 'Created'), ('u', 'Updated'), ('d', 'Deleted')))
@@ -181,7 +184,7 @@ class PostSaveMessageEvent(models.Model):
             return None
 
 def notify_on_post_save(sender, instance, created, raw, using, **kwargs):
-    if getattr(settings, 'NOTIFICATIONS_ENABLED', False):
+    if getattr(settings, 'NOTIFICATIONS_ENABLED', False) and hasattr(settings, 'SITE_ID'):
         models.get_model('notify', 'PostSaveMessageEvent').objects.create_from_instance(instance, created)
 
 # ----------------------------------------------------
