@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
 
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.conf import settings
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
@@ -9,6 +9,7 @@ from django.db import models
 from django.db.models import get_model
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.template.defaultfilters import linebreaksbr
 
 from django.utils import translation
 from django import template
@@ -64,19 +65,24 @@ class MessageMixin(object):
         if isinstance(emails_data, list):
             for email in emails_data:
                 if email: # sometimes email is empty
-                    self.notify(context, self.get_subject_tpl(instance), self.get_body_tpl(instance), email, bcc_emails, self, instance, self.receiver)
+                    local_context = context.copy()
+                    local_context['email'] = email
+                    self.notify(local_context, self.get_subject_tpl(instance), self.get_body_tpl(instance), email, bcc_emails, self, instance, self.receiver)
         if isinstance(emails_data, dict):
             for lang, emails in emails_data.keys(), emails_data.values():
                 for email in emails:
                     if email: # sometimes email is empty
-                        self.notify(context, self.get_subject_tpl(instance, lang), self.get_body_tpl(instance, lang), email, bcc_emails, self, instance, self.receiver, lang)
+                        local_context = context.copy()
+                        local_context['email'] = email
+                        self.notify(local_context, self.get_subject_tpl(instance, lang), self.get_body_tpl(instance, lang), email, bcc_emails, self, instance, self.receiver, lang)
 
     def notify(self, context, subject_tpl, body_tpl, receiver_email, bcc_emails, message_type, instance, recipient, lang=None):
         subject = render_string(subject_tpl, context, lang)
         body = render_string(body_tpl, context, lang)
-        email = EmailMessage(subject, body, settings.DEFAULT_FROM_EMAIL,
-                             [receiver_email], bcc_emails,
-                             headers = {'Reply-To': settings.DEFAULT_FROM_EMAIL})
+        email = EmailMultiAlternatives(subject, body, settings.DEFAULT_FROM_EMAIL,
+                                       [receiver_email], bcc_emails,
+                                       headers = {'Reply-To': settings.DEFAULT_FROM_EMAIL})
+        email.attach_alternative(linebreaksbr(body), "text/html")
         logged_message = None
 
         if self.is_archived:
@@ -90,7 +96,6 @@ class MessageMixin(object):
                     logged_message.save()
             except Exception, error:
                 if logged_message:
-                    print 'Error:', error
                     logged_message.error_note = u"%s" % error
                     logged_message.save()
 
