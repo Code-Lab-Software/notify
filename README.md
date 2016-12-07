@@ -1,21 +1,23 @@
-Notify allows you to register the Django build-in signals with the custom e-mail message template. Once the template is registered, it will be sent to a receivers groups.
+Notify allows you to register the Django build-in signals with the custom e-mail message template.
+Once the template is registered, the signal event will trigger the message to be send.
 
 
 Post-save
 ------
-To register `post-save` message, create the `notify.registry.PostSaveMessageType`
-class, provide the `RECEIVERS` list (i.e. a list of names of the groups, that
-can be configured to receive an e-mail during the `post-save` processing) and 
-the `MODELS` list (only these models will be handled by this message template).
+To register `post-save` message, create the `notify.models.PostSaveMessageType`
+subclass, provide the `RECEIVERS` list (i.e. a list of names of the groups, that
+will be configured to receive an e-mail) and the `SENDERS` list (only listed models postsaves will
+trigger notifications).
 
-**When you're ready with the signal handler registration, `sync_db`, navigate to 
-admin `notify` and configure the message template.**
+The simplest message config is:
 
 ```python
-from notify.registry import PostSaveMessageType
-class SomeMessageHandler(PostSaveMessageType):
-    RECEIVERS = (('receiver_a', 'Receiver A verbose name'), ('receiver_b', 'Receiver B verbose name'))
-    MODELS = (ModelA, ModelB)
+from notify.models import PostSaveMessageType
+class SomeMessageConfig(PostSaveMessageType):
+    RECEIVERS = {'receiver_a': 'create', 'receiver_b': 'update', 'receiver_c': 'any'}
+    SENDERS = ('app.ModelA', 'app.ModelB')
+    SUBJECT = "Email subject - use {{ instance }}"
+    BODY = "Email body - you can also use {{ instance }} here"
 				
     class Receivers:
          def get_receiver_a_emails(self, instance):
@@ -26,6 +28,10 @@ class SomeMessageHandler(PostSaveMessageType):
             # Some logic here...
             return ['another_email@other.domain.com', 'a_second_email@other.com']
 ``` 
+
+'notify' lets you handle dynamic subjects and body templates as well as
+language specific messages. More details soon.
+
 
 Other signals
 ------
