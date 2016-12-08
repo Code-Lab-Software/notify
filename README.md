@@ -16,8 +16,8 @@ from notify.models import PostSaveMessageType
 class SomeMessageConfig(PostSaveMessageType):
     RECEIVERS = {'receiver_a': 'create', 'receiver_b': 'update', 'receiver_c': 'any'}
     SENDERS = ('app.ModelA', 'app.ModelB')
-    SUBJECT = "Email subject - use {{ instance }}"
-    BODY = "Email body - you can also use {{ instance }} here"
+    SUBJECT_TPL = "Email subject - use {{ instance }}"
+    BODY_TPL = "Email body - you can also use {{ instance }} here"
 				
     class Receivers:
          def get_receiver_a_emails(self, instance):
