@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
@@ -45,7 +44,7 @@ class MessageLog(models.Model):
                              [to_email], headers = {'Reply-To': settings.DEFAULT_FROM_EMAIL})
         try:
             email.send()
-        except Exception, error:
-            print error
+        except Exception as error:
+            print(error)
 
 

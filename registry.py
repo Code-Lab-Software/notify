@@ -1,4 +1,4 @@
-import base
+from . import base
 from django.db.models.base import ModelBase
 # -------------------------------------------------------
 # Meta-stuff

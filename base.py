@@ -4,7 +4,6 @@ import datetime
 from django.apps import apps
 from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.conf import settings
-from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models.signals import post_save
@@ -89,7 +88,7 @@ class MessageMixin(object):
             try:
                 email.send()
                 logged_message.sent_sucessfully = True
-            except Exception, error:
+            except Exception as error:
                 if logged_message:
                     logged_message.error_note = u"%s" % error
         logged_message.save()

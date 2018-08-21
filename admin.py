@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-from models import *
+from .models import *
 from django.contrib import admin
-from django.db.models import get_model
 
 class MessageAdmin(admin.ModelAdmin):
     list_display = ('subject', 'body', 'log', 'receiver')

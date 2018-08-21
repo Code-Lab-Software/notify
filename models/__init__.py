@@ -1,4 +1,4 @@
-from logs import *
-from postsave import *
+from .logs import *
+from .postsave import *
 
 
