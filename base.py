@@ -82,7 +82,8 @@ class MessageMixin(object):
         email = EmailMultiAlternatives(subject, body, settings.DEFAULT_FROM_EMAIL,
                                        [receiver_email], bcc_emails,
                                        headers = {'Reply-To': settings.DEFAULT_FROM_EMAIL})
-        email.attach_alternative(linebreaksbr(body), "text/html")
+        #email.attach_alternative(linebreaksbr(body), "text/html")
+        email.attach_alternative(body, "text/html")
         logged_message = None
 
         if self.is_archived:
